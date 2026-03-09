@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-service
+  labels:
+    app: worker-service
+spec:
+  replicas: 3   # Production → multiple replicas for HA
+  revisionHistoryLimit: 5
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: worker-service
+
+  template:
+    metadata:
+      labels:
+        app: worker-service
+
+    spec:
+      containers:
+        - name: worker-service
+          image: rutwik/worker-service:latest   # 🔁 Replace with your Docker image
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8081
+
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: db_host
+
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: worker-secret
+                  key: db_username
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: worker-secret
+                  key: db_password
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+
+          # ✅ Readiness Probe → Is app ready to serve traffic?
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # ✅ Liveness Probe → Is app alive?
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 40
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # ✅ Graceful shutdown
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+
+      terminationGracePeriodSeconds: 30

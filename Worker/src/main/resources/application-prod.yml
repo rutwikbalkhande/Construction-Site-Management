@@ -1,0 +1,26 @@
+##Docker Mysql image Use
+#
+#spring:
+#  datasource:
+#    url: jdbc:mysql://mysql-docker:3306/construction    # jdbc:mysql://localhost:3306/construction   # SB run locally & MySql in Docker
+#    username: rutwik
+#    password: rutwik
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#
+#  jpa:
+#    database-platform: org.hibernate.dialect.MySQLDialect
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#
+#    management:
+#      endpoints:
+#        web:
+#          exposure:
+#            include: health,info
+#      endpoint:
+#        health:
+#          show-details: always
+#
+#
+#
