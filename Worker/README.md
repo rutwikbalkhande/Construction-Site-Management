@@ -44,7 +44,18 @@ OR
 
     docker run -p 8081:8081 -e SPRING_PROFILES_ACTIVE=prod worker-service
 
-----------------------------------------------------------------
+-------------------------------------------------------------------------------------------------
+
+6️⃣ Deploy Commands
+ 
+      kubectl apply -f worker-service/k8s/configmap.yml
+      kubectl apply -f worker-service/k8s/secret.yml
+      kubectl apply -f worker-service/k8s/deployment.yml
+      kubectl apply -f worker-service/k8s/service.yml
+
+
+---------------------------------------------------------------------------------------------------
+
 # Run Redis "Compulsory {500 Error}"
 
 # Call Worker APIs :

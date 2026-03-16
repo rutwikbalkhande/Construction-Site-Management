@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:mysql://mysql-docker:3306/construction_sitetask_prod
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  redis:
+    host: redis-prod
+    port: 6379
+
+logging:
+  level:
+    org.springframework: WARN
+    com.example: INFO

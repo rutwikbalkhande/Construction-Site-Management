@@ -1,0 +1,72 @@
+services:
+
+  mysql-db:
+    image: mysql:8
+    container_name: mysql-docker
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: construction
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    networks:
+      - construction-net
+
+    healthcheck:
+      test: ["CMD", "mysqladmin" , "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+
+  redis:
+    image: redis:latest
+    container_name: redis-cache
+    restart: always
+
+    ports:
+      - "6379:6379"
+
+    networks:
+      - construction-net
+
+
+  spring-app:
+    build: ./Worker
+    container_name: worker-service
+    restart: always
+
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3307/contructiondb_docker
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+
+    networks:
+      - construction-net
+
+
+volumes:
+  mysql_data:
+
+
+networks:
+  construction-net:
