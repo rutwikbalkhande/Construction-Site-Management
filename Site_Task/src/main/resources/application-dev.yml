@@ -1,0 +1,25 @@
+spring:
+  datasource:
+# SB & DB Run locally use pos=rt 3306
+    url: jdbc:mysql://localhost:3306/construction_sitetask_dev
+# SB locally & DB in Docker use 3307 for connection when Both run in Docker that time use "container name & port 3306"
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  redis:
+    host: localhost
+    port: 6379
+
+logging:
+  level:
+    org.springframework: INFO
+    com.example: DEBUG

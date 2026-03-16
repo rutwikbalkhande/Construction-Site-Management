@@ -1,0 +1,112 @@
+name: Microservices CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: docker.io
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  # =========================
+  # BUILD AND PUSH DOCKER
+  # =========================
+
+  build-and-push:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # ---------------------------
+      # BUILD SERVICES
+      # ---------------------------
+
+      - name: Build Worker Service
+        run: |
+          cd worker-service
+          mvn clean package -DskipTests
+
+      - name: Build Eureka Server
+        run: |
+          cd eureka-server
+          mvn clean package -DskipTests
+
+      # ---------------------------
+      # DOCKER LOGIN
+      # ---------------------------
+
+      - name: Docker Login
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # ---------------------------
+      # BUILD DOCKER IMAGES
+      # ---------------------------
+
+      - name: Build Docker Images
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/worker-service:$IMAGE_TAG ./worker-service
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/eureka-server:$IMAGE_TAG ./eureka-server
+
+      # ---------------------------
+      # PUSH DOCKER IMAGES
+      # ---------------------------
+
+      - name: Push Docker Images
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/worker-service:$IMAGE_TAG
+          docker push ${{ secrets.DOCKER_USERNAME }}/eureka-server:$IMAGE_TAG
+  
+
+  # =========================
+  # DEPLOY TO KUBERNETES
+  # =========================
+
+  deploy:
+
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+
+      # ---------------------------
+      # UPDATE IMAGE TAG
+      # ---------------------------
+
+      - name: Update Kubernetes Image
+        run: |
+          kubectl set image deployment/worker-service worker=${{ secrets.DOCKER_USERNAME }}/worker-service:$IMAGE_TAG
+          kubectl set image deployment/eureka-server eureka=${{ secrets.DOCKER_USERNAME }}/eureka-server:$IMAGE_TAG
+
+      # ---------------------------
+      # VERIFY DEPLOYMENT
+      # ---------------------------
+
+      - name: Verify Deployment
+        run: |
+          kubectl rollout status deployment/worker-service
+          kubectl rollout status deployment/eureka-server
